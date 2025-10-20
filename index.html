@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de VPD — Fusión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1:#0b1020; --bg2:#0c1329; --text:#e7ecf2; --muted:#9aa3b2; --card:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.18); --ring: rgba(96,165,250,.35);
+      --accent1:#7c5cff; --accent2:#22d3ee; --accent3:#33ff99;
+      --ok:#22c55e; --low:#f59e0b; --hi:#ef4444;
+      --radius:18px; --shadow:0 14px 36px rgba(2,6,23,.35);
+    }
+    .theme-light{
+      --bg1:#e9eff6; --bg2:#f4f7fb; --text:#0f172a; --muted:#475569; --card:rgba(255,255,255,.7);
+      --stroke:rgba(15,23,42,.14); --ring: rgba(37,99,235,.22);
+      --accent1:#2563eb; --accent2:#06b6d4; --accent3:#10b981;
+      --shadow:0 14px 30px rgba(15,23,42,.10);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;min-height:100vh;font-family:Poppins,system-ui,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);
+      background:
+      radial-gradient(1100px 600px at -15% -10%, rgba(124,92,255,.25), transparent 60%),
+      radial-gradient(900px 600px at 115% -10%, rgba(34,211,238,.25), transparent 60%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
+      display:flex;flex-direction:column}
+    .wrap{width:100%;max-width:1120px;margin:auto;padding:28px}
+
+    /* Header */
+    .nav{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:0 10px 22px rgba(34,211,238,.25)}
+    .titles{display:flex;flex-direction:column}
+    .titles h1{margin:0;font-weight:800;letter-spacing:.2px}
+    .titles p{margin:0;color:var(--muted)}
+
+    .toolbar{display:flex;align-items:center;gap:12px}
+    .toggle{display:inline-flex;align-items:center;gap:10px;font-weight:600}
+    .toggle input{display:none}
+    .switch{width:52px;height:28px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid var(--stroke);position:relative}
+    .knob{position:absolute;top:50%;left:3px;translate:0 -50%;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:left .18s}
+    .toggle input:checked + .switch .knob{left:27px}
+
+    /* Cards + glass */
+    .card{backdrop-filter: blur(16px);-webkit-backdrop-filter: blur(16px); background:var(--card);
+      border:1px solid var(--stroke); border-radius:var(--radius); box-shadow:var(--shadow)}
+
+    /* Grid */
+    .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:22px}
+    @media (max-width: 900px){.grid{grid-template-columns:1fr}}
+
+    .controls{padding:20px}
+    .results{padding:20px;display:grid;grid-template-columns:1fr;gap:16px}
+
+    .section-title{margin:0 0 8px 0;font-weight:800}
+
+    .group{margin:14px 0}
+    label{display:block;margin:0 0 8px;font-weight:600}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+
+    input[type=number], select{appearance:none; background:rgba(255,255,255,.06); color:var(--text);
+      border:1px solid var(--stroke); border-radius:12px; padding:10px 12px; font-weight:600; min-width:120px; outline:0}
+    input[type=number]:focus, select:focus{box-shadow:0 0 0 7px var(--ring)}
+
+    input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:10px; border-radius:999px;
+      background:linear-gradient(90deg, var(--accent1), var(--accent2)); outline:0}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:22px; height:22px; border-radius:50%; background:#fff; border:3px solid var(--accent1); box-shadow:0 2px 6px rgba(0,0,0,.35)}
+    input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--accent1); box-shadow:0 2px 6px rgba(0,0,0,.35)}
+
+    .muted{color:var(--muted);font-size:.92rem}
+
+    /* Gauge */
+    .gauge-wrap{display:flex;align-items:center;justify-content:center;padding:6px 0}
+    .gauge{width:260px;height:260px}
+    .v{font-weight:800;font-size:56px}
+    .unit{font-size:18px;color:var(--muted)}
+
+    /* Status + recommendations */
+    .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;font-weight:700;border:1px solid transparent}
+    .ok{background:rgba(34,197,94,.16);color:#22c55e;border-color:rgba(34,197,94,.35)}
+    .low{background:rgba(245,158,11,.16);color:#f59e0b;border-color:rgba(245,158,11,.35)}
+    .hi{background:rgba(239,68,68,.16);color:#ef4444;border-color:rgba(239,68,68,.35)}
+
+    .panel{padding:14px 16px;border-radius:14px;border:1px solid var(--stroke);background:rgba(255,255,255,.06)}
+    .panel h3{margin:0 0 8px}
+    .panel p{margin:8px 0}
+
+    footer{margin-top:14px;text-align:center;color:var(--muted);font-size:.9rem}
+    .guided-hide{display:none}
+    .guided-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .progress{width:100%;height:10px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid var(--stroke);overflow:hidden}
+    .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width .3s}
+    table{width:100%;border-collapse:collapse;font-size:.92rem}
+    th,td{padding:8px 10px;border-bottom:1px solid var(--stroke)}
+    th{text-align:left;color:var(--muted);font-weight:600}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="nav">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="titles">
+          <h1>Calculadora de VPD — Fusión</h1>
+          <p>Glassmorphism + tema claro/oscuro, indicador circular y recomendaciones precisas.</p>
+        </div>
+      </div>
+      <div class="toolbar">
+        <label class="toggle" aria-label="Cambiar tema">
+          <input type="checkbox" id="themeToggle" />
+          <span class="switch"><span class="knob"></span></span>
+          <span aria-hidden="true">🌙</span>
+        </label>
+        <div class="row" style="gap:8px">
+          <select id="profile-select" title="Perfil de usuario"></select>
+          <button id="profile-new" class="badge" style="cursor:pointer">+ Nuevo</button>
+          <button id="profile-rename" class="badge" style="cursor:pointer">✎ Renombrar</button>
+          <button id="profile-delete" class="badge" style="cursor:pointer">🗑️ Borrar</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid" role="region" aria-label="Calculadora de VPD — Fusión">
+      <section class="card controls" aria-labelledby="ctl">
+        <h2 id="ctl" class="section-title">Parámetros</h2>
+
+        <div class="group">
+          <label for="t-slider">Temperatura (°C)</label>
+          <div class="row">
+            <input id="t-slider" type="range" min="10" max="35" step="0.5" value="25">
+            <input id="t-input" type="number" min="10" max="35" step="0.5" value="25" inputmode="decimal">
+          </div>
+          <div class="muted">Medí cerca del dosel para mayor precisión.</div>
+        </div>
+
+        <div class="group">
+          <label for="h-slider">Humedad relativa (%)</label>
+          <div class="row">
+            <input id="h-slider" type="range" min="20" max="80" step="1" value="50">
+            <input id="h-input" type="number" min="20" max="80" step="1" value="50" inputmode="numeric">
+          </div>
+          <div class="muted">Aguardá 5–10 min luego de ajustar humidificador/deshumidificador.</div>
+        </div>
+
+        <div class="group">
+          <label for="stage">Etapa de cultivo</label>
+          <select id="stage">
+            <option value="clonacion">Clonación / Germinación</option>
+            <option value="vegetativo" selected>Vegetativo</option>
+            <option value="floracion">Floración</option>
+            <option value="secado">Secado</option>
+          </select>
+        </div>
+
+        <div id="guided-controls" class="group guided-hide">
+          <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="guidedToggle"> Activar <strong>Secado guiado</strong></label>
+          <div class="guided-grid" style="margin-top:8px">
+            <div>
+              <label for="total-days">Duración (días)</label>
+              <input id="total-days" type="number" min="5" max="14" step="1" value="10">
+            </div>
+            <div>
+              <label for="current-day">Día actual</label>
+              <input id="current-day" type="number" min="1" max="14" step="1" value="1">
+            </div>
+          </div>
+          <div style="margin-top:8px">
+            <label for="dry-profile">Perfil de secado</label>
+            <select id="dry-profile">
+              <option value="medio" selected>Medio (equilibrado)</option>
+              <option value="lento">Lento (más aromático)</option>
+              <option value="rapido">Rápido (ambiente más seco)</option>
+            </select>
+          </div>
+          <div class="muted">Sugerencias base según perfil: Lento <strong>62→58% HR</strong>, Medio <strong>60→55% HR</strong>, Rápido <strong>58→52% HR</strong>; T objetivo ~18–21°C, VPD 0.6–0.8 kPa.</div>
+        </div>
+      </section>
+
+      <section class="card results" aria-labelledby="res">
+        <h2 id="res" class="section-title">Resultado</h2>
+
+        <div class="gauge-wrap">
+          <svg class="gauge" viewBox="0 0 200 200" aria-label="Indicador VPD">
+            <defs>
+              <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="var(--accent1)"/>
+                <stop offset="60%" stop-color="var(--accent2)"/>
+                <stop offset="100%" stop-color="var(--accent3)"/>
+              </linearGradient>
+            </defs>
+            <circle cx="100" cy="100" r="84" stroke="rgba(255,255,255,.12)" stroke-width="20" fill="none"/>
+            <circle id="arc" cx="100" cy="100" r="84" stroke="url(#grad)" stroke-width="20" fill="none" stroke-linecap="round"
+              transform="rotate(-90 100 100)" stroke-dasharray="528" stroke-dashoffset="528"/>
+            <text id="val" x="100" y="100" text-anchor="middle" dominant-baseline="central" class="v">--</text>
+            <text x="100" y="126" text-anchor="middle" class="unit">kPa</text>
+          </svg>
+        </div>
+
+        <div id="status" class="badge" aria-live="polite"></div>
+        <div id="tips" class="panel" aria-live="polite"></div>
+        <div id="guided-panel" class="panel guided-hide">
+          <h3>Secado guiado</h3>
+          <p><strong>Objetivo hoy:</strong> <span id="goal-T">--</span>°C • <span id="goal-H">--</span>% HR • <span id="goal-V">--</span> kPa</p>
+          <div class="progress" aria-label="Progreso del secado"><div class="bar" id="progress-bar"></div></div>
+          <div class="guided-grid" style="margin-top:12px">
+            <div>
+              <label for="log-T">Registrar T (°C)</label>
+              <input id="log-T" type="number" step="0.1" value="20">
+            </div>
+            <div>
+              <label for="log-H">Registrar HR (%)</label>
+              <input id="log-H" type="number" step="1" value="58">
+            </div>
+          </div>
+          <div class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px">
+            <button id="add-log" class="badge" style="cursor:pointer">+ Agregar lectura</button>
+            <button id="clear-log" class="badge" style="cursor:pointer">🗑️ Limpiar</button>
+            <label class="badge" style="gap:6px">OK necesarios
+              <input id="ok-needed-input" type="number" min="1" max="3" value="2" style="min-width:64px">
+            </label>
+            <label class="badge" style="gap:6px">Separación mínima (h)
+              <input id="min-gap-input" type="number" min="0" max="12" value="4" style="min-width:64px">
+            </label>
+            <button id="export-csv" class="badge" style="cursor:pointer">⬇️ Exportar CSV</button>
+            <span class="badge" id="day-ok-badge">Estado del día: ⏳</span>
+            <span class="badge" id="ok-counter">Lecturas OK: <strong><span id="ok-count">0</span>/<span id="ok-needed">2</span></strong></span>
+          </div>
+          <div class="row" style="gap:8px; margin-top:8px">
+            <span class="badge" id="slot-am">AM: ⏳</span>
+            <span class="badge" id="slot-pm">PM: ⏳</span>
+            <span class="badge" id="slot-night">Noche: ⏳</span>
+          </div>
+          <div style="margin-top:10px;overflow:auto">
+            <table id="log-table" aria-label="Registros de secado">
+              <thead><tr><th>Fecha</th><th>Día</th><th>T (°C)</th><th>HR (%)</th><th>VPD</th><th>Estado</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>Hecho con ❤️ para cultivadores. Mantener el VPD adecuado mejora la transpiración y la asimilación de nutrientes.</footer>
+  </div>
+
+  <script>
+  // ========= Tema =========
+  const body = document.body;
+  const themeToggle = document.getElementById('themeToggle');
+  const storedTheme = localStorage.getItem('vpd_theme');
+  if (storedTheme === 'light') { body.classList.add('theme-light'); themeToggle.checked = true; }
+  themeToggle?.addEventListener('change', () => {
+    const light = themeToggle.checked;
+    body.classList.toggle('theme-light', light);
+    localStorage.setItem('vpd_theme', light ? 'light' : 'dark');
+  });
+
+  // ========= Rangos por etapa =========
+  const ranges = {
+    clonacion:  { min: 0.8, max: 1.0, name: 'Clonación / Germinación' },
+    vegetativo: { min: 1.0, max: 1.3, name: 'Vegetativo' },
+    floracion:  { min: 1.2, max: 1.5, name: 'Floración' },
+    secado:     { min: 0.6, max: 0.8, name: 'Secado' }
+  };
+
+  // ========= DOM refs =========
+  const tSlider = document.getElementById('t-slider');
+  const tInput  = document.getElementById('t-input');
+  const hSlider = document.getElementById('h-slider');
+  const hInput  = document.getElementById('h-input');
+  const stage   = document.getElementById('stage');
+
+  const arc   = document.getElementById('arc');
+  const valT  = document.getElementById('val');
+  const status = document.getElementById('status');
+  const tips   = document.getElementById('tips');
+
+  // Secado guiado
+  const guidedControls = document.getElementById('guided-controls');
+  const guidedPanel    = document.getElementById('guided-panel');
+  const guidedToggle   = document.getElementById('guidedToggle');
+  const totalDays      = document.getElementById('total-days');
+  const currentDay     = document.getElementById('current-day');
+  const goalT          = document.getElementById('goal-T');
+  const goalH          = document.getElementById('goal-H');
+  const goalV          = document.getElementById('goal-V');
+  const progressBar    = document.getElementById('progress-bar');
+  const logT           = document.getElementById('log-T');
+  const logH           = document.getElementById('log-H');
+  const addLogBtn      = document.getElementById('add-log');
+  const clearLogBtn    = document.getElementById('clear-log');
+  const logTableBody   = document.querySelector('#log-table tbody');
+  const dayOkBadge     = document.getElementById('day-ok-badge');
+  const okCounter      = document.getElementById('ok-counter');
+  const okCountEl      = document.getElementById('ok-count');
+  const okNeededEl     = document.getElementById('ok-needed');
+  const okNeededInput  = document.getElementById('ok-needed-input');
+  const minGapInput    = document.getElementById('min-gap-input');
+  const exportBtn      = document.getElementById('export-csv');
+  const slotAM         = document.getElementById('slot-am');
+  const slotPM         = document.getElementById('slot-pm');
+  const slotNight      = document.getElementById('slot-night');
+  const dryProfile     = document.getElementById('dry-profile');
+
+  // Perfiles locales (multi-usuario en el mismo dispositivo)
+  const profileSelect    = document.getElementById('profile-select');
+  const btnProfileNew    = document.getElementById('profile-new');
+  const btnProfileRename = document.getElementById('profile-rename');
+  const btnProfileDelete = document.getElementById('profile-delete');
+
+  // ========= Utilidades =========
+  const clamp = (n, min, max) => Math.max(min, Math.min(n, max));
+  const svp   = (t) => 0.6108 * Math.exp((17.27 * t) / (t + 237.3)); // kPa
+  const vpd   = (t, rh) => svp(t) * (1 - rh / 100);
+
+  // ========= Perfiles locales =========
+  function getProfiles() {
+    try {
+      const p = JSON.parse(localStorage.getItem('vpd_profiles') || '[]');
+      return Array.isArray(p) && p.length ? p : ['default'];
+    } catch {
+      return ['default'];
+    }
+  }
+  function saveProfiles(list) {
+    localStorage.setItem('vpd_profiles', JSON.stringify(Array.from(new Set(list))));
+  }
+  function currentProfile() {
+    return localStorage.getItem('vpd_profile_current') || 'default';
+  }
+  function setCurrentProfile(name) {
+    localStorage.setItem('vpd_profile_current', name);
+    renderProfiles();
+    loadSettingsToUI();
+    renderLogs();
+    update();
+  }
+  function renderProfiles() {
+    const list = getProfiles();
+    profileSelect.innerHTML = list
+      .map(n => `<option ${n === currentProfile() ? 'selected' : ''}>${n}</option>`)
+      .join('');
+  }
+  function getKey(suffix) { return `vpd_${currentProfile()}_${suffix}`; }
+  function setSetting(key, value) { localStorage.setItem(getKey(key), value); }
+  function getSetting(key)       { return localStorage.getItem(getKey(key)); }
+
+  // ========= Secado guiado: objetivos por perfil =========
+  function guidedTargets(day, total) {
+    day = clamp(day, 1, total);
+    total = clamp(total, 5, 14);
+    const profile = (getSetting('dry_profile') || dryProfile?.value || 'medio');
+    let hrStart = 60, hrEnd = 55, t = 19, vpdMin = 0.6, vpdMax = 0.8;
+    if (profile === 'lento')  { hrStart = 62; hrEnd = 58; t = 18.5; vpdMin = 0.55; vpdMax = 0.75; }
+    if (profile === 'rapido') { hrStart = 58; hrEnd = 52; t = 20.0; vpdMin = 0.65; vpdMax = 0.85; }
+    const h = Math.round(hrStart + (hrEnd - hrStart) * ((day - 1) / (total - 1)));
+    return { t, h, vpdMin, vpdMax, profile };
+  }
+
+  // ========= Logs (por perfil) =========
+  function saveLogs(logs) { localStorage.setItem(getKey('dry_logs'), JSON.stringify(logs)); }
+  function loadLogs() {
+    try { return JSON.parse(localStorage.getItem(getKey('dry_logs')) || '[]'); }
+    catch { return []; }
+  }
+
+  function renderLogs() {
+    const logs = loadLogs();
+    logTableBody.innerHTML = logs.map(l =>
+      `<tr><td>${l.date}</td><td>${l.day}/${l.total}</td><td>${l.t.toFixed(1)}</td><td>${l.h}</td><td>${l.v.toFixed(2)}</td><td>${l.ok ? '✔️ OK' : '⚠️ Fuera'}</td></tr>`
+    ).join('');
+
+    const tot  = clamp(parseInt(totalDays.value) || 10, 5, 14);
+    const day  = clamp(parseInt(currentDay.value) || 1, 1, tot);
+    const need = clamp(parseInt(okNeededInput.value) || 2, 1, 3);
+    okNeededEl.textContent = need;
+
+    // Lecturas OK del día
+    const todays = logs.filter(l => l.day === day && l.total === tot && l.ok);
+
+    // Slots horarios
+    const hasAM    = todays.some(l => { const h = new Date(l.ts).getHours(); return h >= 5 && h < 12; });
+    const hasPM    = todays.some(l => { const h = new Date(l.ts).getHours(); return h >= 12 && h < 18; });
+    const hasNight = todays.some(l => { const h = new Date(l.ts).getHours(); return h >= 18 && h <= 23; });
+    slotAM.className    = 'badge ' + (hasAM ? 'ok' : 'low');    slotAM.textContent    = 'AM: '    + (hasAM ? '✔️' : '⏳');
+    slotPM.className    = 'badge ' + (hasPM ? 'ok' : 'low');    slotPM.textContent    = 'PM: '    + (hasPM ? '✔️' : '⏳');
+    slotNight.className = 'badge ' + (hasNight ? 'ok' : 'low'); slotNight.textContent = 'Noche: ' + (hasNight ? '✔️' : '⏳');
+
+    // Separación mínima entre OK
+    const minGapHrs = clamp(parseInt(minGapInput.value) || 4, 0, 12);
+    const sorted = [...todays].sort((a, b) => a.ts - b.ts);
+    let count = 0, lastTs = null;
+    for (const l of sorted) {
+      if (lastTs === null || (l.ts - lastTs) >= minGapHrs * 3600 * 1000) { count++; lastTs = l.ts; }
+      if (count >= need) break;
+    }
+    okCountEl.textContent = count;
+    if (count >= need) { dayOkBadge.textContent = 'Estado del día: ✅ Cumplido'; dayOkBadge.className = 'badge ok'; }
+    else               { dayOkBadge.textContent = 'Estado del día: ⏳ Pendiente'; dayOkBadge.className = 'badge low'; }
+  }
+
+  // ========= Indicador circular =========
+  const CIRC = 2 * Math.PI * 84; // ~528
+  function setGauge(v) {
+    const max = 2.5;
+    const p = Math.max(0, Math.min(v / max, 1));
+    const offset = CIRC * (1 - p);
+    arc.style.strokeDasharray = CIRC;
+    arc.style.strokeDashoffset = offset;
+    valT.textContent = isFinite(v) ? v.toFixed(2) : '--';
+  }
+
+  // ========= Update principal =========
+  function update() {
+    const t = parseFloat(tInput.value);
+    const h = parseFloat(hInput.value);
+    const rg = ranges[stage.value];
+    const isSecado = stage.value === 'secado';
+
+    guidedControls.classList.toggle('guided-hide', !isSecado);
+    guidedPanel.classList.toggle('guided-hide', !(isSecado && guidedToggle.checked));
+
+    if (Number.isNaN(t) || Number.isNaN(h)) {
+      setGauge(NaN); status.textContent = ''; tips.innerHTML = ''; return;
+    }
+    const value = vpd(t, h);
+    setGauge(value);
+
+    let cls = '', html = '', label = '';
+    if (value >= rg.min && value <= rg.max) {
+      cls = 'ok'; label = isSecado ? 'Secado óptimo' : 'Óptimo';
+      html = isSecado
+        ? `<h3>¡Secado en rango!</h3><p>Mantené <strong>${t.toFixed(1)}°C</strong> y <strong>${h}% HR</strong>.</p>`
+        : `<h3>¡Excelente!</h3><p>VPD en rango para <strong>${rg.name}</strong>.</p>`;
+    } else if (value < rg.min) {
+      cls = 'low'; label = isSecado ? 'VPD bajo (secado húmedo)' : 'VPD bajo';
+      const target = rg.min;
+      let recT = t; for (let tt = t; tt <= 35; tt += 0.5) { if (vpd(tt, h) >= target) { recT = tt; break; } }
+      const recH = Math.max(20, Math.min(80, Math.round(100 * (1 - target / svp(t)))));
+      html = isSecado
+        ? `<h3>Secado demasiado húmedo</h3><p>Riesgo de moho.</p>${recT > t ? `<p><strong>Subí T</strong> a <strong>${recT.toFixed(1)}°C</strong>.</p>` : ''}${recH < h ? `<p><strong>Bajá HR</strong> a <strong>${recH}%</strong>.</p>` : ''}`
+        : `<h3>Ambiente húmedo</h3><p>Puede favorecer hongos.</p>`;
+    } else {
+      cls = 'hi'; label = isSecado ? 'VPD alto (secado seco)' : 'VPD alto';
+      const target = rg.max;
+      let recT = t; for (let tt = t; tt >= 10; tt -= 0.5) { if (vpd(tt, h) <= target) { recT = tt; break; } }
+      const recH = Math.max(20, Math.min(80, Math.round(100 * (1 - target / svp(t)))));
+      html = isSecado
+        ? `<h3>Secado demasiado seco</h3><p>Puede quebrar tricomas.</p>${recT < t ? `<p><strong>Bajá T</strong> a <strong>${recT.toFixed(1)}°C</strong>.</p>` : ''}${recH > h ? `<p><strong>Subí HR</strong> a <strong>${recH}%</strong>.</p>` : ''}`
+        : `<h3>Ambiente seco</h3><p>Puede frenar el desarrollo.</p>`;
+    }
+    status.className = `badge ${cls}`;
+    status.textContent = label;
+    tips.innerHTML = html + (isSecado ? `<p class="muted">Referencia secado: <strong>18–21°C</strong>, HR según perfil, VPD objetivo 0.6–0.8 kPa.</p>` : '');
+
+    // Panel guiado
+    if (isSecado && guidedToggle.checked) {
+      const tot = clamp(parseInt(totalDays.value) || 10, 5, 14);
+      const day = clamp(parseInt(currentDay.value) || 1, 1, tot);
+      totalDays.value = tot; currentDay.value = day; currentDay.max = tot;
+      const g = guidedTargets(day, tot);
+      goalT.textContent = g.t.toFixed(0);
+      goalH.textContent = g.h;
+      goalV.textContent = `${g.vpdMin.toFixed(2)}–${g.vpdMax.toFixed(2)}`;
+      progressBar.style.width = ((day - 1) / (tot - 1)) * 100 + '%';
+    }
+  }
+
+  // ========= Eventos =========
+  const sync = (a, b) => a.addEventListener('input', () => { b.value = a.value; update(); });
+  sync(tSlider, tInput); sync(tInput, tSlider);
+  sync(hSlider, hInput); sync(hInput, hSlider);
+  stage.addEventListener('change', update);
+  guidedToggle?.addEventListener('change', update);
+  totalDays?.addEventListener('input', update);
+  currentDay?.addEventListener('input', update);
+
+  okNeededInput?.addEventListener('input', () => { setSetting('ok_needed', String(clamp(parseInt(okNeededInput.value) || 2, 1, 3))); renderLogs(); });
+  minGapInput?.addEventListener('input', () => { setSetting('min_gap',   String(clamp(parseInt(minGapInput.value)   || 4, 0, 12))); renderLogs(); });
+  dryProfile?.addEventListener('change', () => { setSetting('dry_profile', dryProfile.value); update(); });
+
+  exportBtn?.addEventListener('click', () => {
+    const logs = loadLogs();
+    const header = 'perfil,fecha,dia,total,temperatura,humedad,vpd,ok\n';
+    const rows = logs.map(l => [
+      `"${currentProfile()}"`, `"${l.date}"`, l.day, l.total, l.t.toFixed(1), l.h, l.v.toFixed(2), l.ok ? 1 : 0
+    ].join(','));
+    const csv = header + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `registro_secado_vpd_${currentProfile()}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  addLogBtn?.addEventListener('click', () => {
+    const tot = clamp(parseInt(totalDays.value) || 10, 5, 14);
+    const day = clamp(parseInt(currentDay.value) || 1, 1, tot);
+    const t = parseFloat(logT.value);
+    const h = parseInt(logH.value);
+    if (!isFinite(t) || !isFinite(h)) return;
+    const v = vpd(t, h);
+    const g = guidedTargets(day, tot);
+    const ok = (t >= 18 && t <= 21) && (h >= g.h - 2 && h <= g.h + 2) && (v >= g.vpdMin && v <= g.vpdMax);
+    const now = new Date();
+    const logs = loadLogs();
+    logs.unshift({ date: now.toLocaleString(), ts: now.getTime(), day, total: tot, t, h, v, ok });
+    saveLogs(logs);
+    renderLogs();
+    update();
+  });
+
+  clearLogBtn?.addEventListener('click', () => { saveLogs([]); renderLogs(); update(); });
+
+  profileSelect?.addEventListener('change', () => setCurrentProfile(profileSelect.value));
+  btnProfileNew?.addEventListener('click', () => {
+    const name = prompt('Nombre del nuevo perfil:', 'perfil_' + (Math.random().toString(36).slice(2, 6)));
+    if (!name) return;
+    const list = getProfiles();
+    if (list.includes(name)) { alert('Ese nombre ya existe.'); return; }
+    list.push(name); saveProfiles(list); setCurrentProfile(name); saveLogs([]);
+  });
+  btnProfileRename?.addEventListener('click', () => {
+    const cur = currentProfile(); const list = getProfiles();
+    const name = prompt('Nuevo nombre para el perfil:', cur);
+    if (!name || name === cur) return;
+    if (list.includes(name)) { alert('Ese nombre ya existe.'); return; }
+    // Migrar claves
+    const keys = ['dry_logs', 'ok_needed', 'min_gap', 'dry_profile'];
+    keys.forEach(k => {
+      const oldKey = `vpd_${cur}_${k}`;
+      const val = localStorage.getItem(oldKey);
+      if (val !== null) { localStorage.setItem(`vpd_${name}_${k}`, val); localStorage.removeItem(oldKey); }
+    });
+    const idx = list.indexOf(cur); if (idx > -1) list[idx] = name;
+    saveProfiles(list); setCurrentProfile(name);
+  });
+  btnProfileDelete?.addEventListener('click', () => {
+    const cur = currentProfile(); const list = getProfiles();
+    if (cur === 'default') { alert('No se puede borrar el perfil "default".'); return; }
+    if (!confirm(`¿Borrar el perfil "${cur}" y sus datos?`)) return;
+    const keys = ['dry_logs', 'ok_needed', 'min_gap', 'dry_profile'];
+    keys.forEach(k => localStorage.removeItem(`vpd_${cur}_${k}`));
+    const next = list.find(n => n !== cur) || 'default';
+    saveProfiles(list.filter(n => n !== cur));
+    setCurrentProfile(next);
+  });
+
+  // ========= Inicialización =========
+  renderProfiles();
+  if (!getProfiles().includes(currentProfile())) setCurrentProfile('default');
+  function loadSettingsToUI() {
+    const need = clamp(parseInt(getSetting('ok_needed') || '2'), 1, 3);
+    const gap  = clamp(parseInt(getSetting('min_gap')   || '4'), 0, 12);
+    const prof = getSetting('dry_profile') || 'medio';
+    if (okNeededInput) okNeededInput.value = need;
+    if (minGapInput)   minGapInput.value   = gap;
+    if (dryProfile)    dryProfile.value    = prof;
+  }
+  loadSettingsToUI();
+  renderLogs();
+  update();
+</script>
+
+</body>
+</html>
