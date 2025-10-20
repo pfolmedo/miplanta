@@ -567,6 +567,38 @@
   loadSettingsToUI();
   renderLogs();
   update();
+
+  <!-- ==== Firebase config ==== -->
+<script type="module">
+  // Importar SDKs
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-analytics.js";
+
+    // Configuracion Firebase
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCMyufI1EzjgzV9VvWwAME6PEZFqW-ppN0",
+  authDomain: "vpdcalc.firebaseapp.com",
+  projectId: "vpdcalc",
+  storageBucket: "vpdcalc.firebasestorage.app",
+  messagingSenderId: "1000416696277",
+  appId: "1:1000416696277:web:287644961aca869b7d8f5c",
+  measurementId: "G-4992S676C3"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);    
+
+    // Línea de prueba
+  console.log(app.name ? "✅ Conectado a Firebase" : "❌ No conectado");
 </script>
 
 </body>
